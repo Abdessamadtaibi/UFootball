@@ -190,7 +190,10 @@ class DeactivateUserView(APIView):
 
 
 def activate_user_template_view(request, uid, token):
-    activation_url = f"http://127.0.0.1:8000/api/auth/users/activation/"
+    # Dynamically build the activation URL from the current request
+    scheme = request.scheme
+    host = request.get_host()
+    activation_url = f"{scheme}://{host}/api/auth/users/activation/"
     data = {"uid": uid, "token": token}
     response = requests.post(activation_url, data=data)
 
@@ -208,7 +211,9 @@ class ResetPasswordView(View):
     def post(self, request, uid, token):
         new_password = request.POST.get("new_password")
         re_password = request.POST.get("re_password")
-
+        scheme = request.scheme
+        host = request.get_host()
+        activation_url = f"{scheme}://{host}/api/auth/users/reset_password_confirm/"
         if new_password != re_password:
             return render(request, "reset_password.html", {
                 "uid": uid,
@@ -218,8 +223,8 @@ class ResetPasswordView(View):
 
         # Call Djoser's reset_password_confirm endpoint
         response = requests.post(
-            "http://127.0.0.1:8000/api/auth/users/reset_password_confirm/",
-            json={"uid": uid, "token": token, "new_password": new_password},
+            activation_url,
+            json={"uid": uid, "token": token, "new_password": new_password, "re_new_password": new_password},
         )
 
         if response.status_code == 204:  # success

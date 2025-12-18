@@ -12,7 +12,8 @@ class User(AbstractUser):
     USER_TYPES = (
         ('parent', 'Parent'),
         ('staff', 'Staff'),
-        ('admin', 'Admin/Organisateur'), 
+        ('admin', 'Admin/Organisateur'),
+        ('viewer', 'Viewer'),  # Read-only access to tournaments and matches
     )
     
     # Champs de base
@@ -68,6 +69,9 @@ class User(AbstractUser):
     
     def is_admin_user(self):
         return self.user_type == 'admin'
+    
+    def is_viewer(self):
+        return self.user_type == 'viewer'
 
 
 class UserProfile(models.Model):

@@ -41,12 +41,12 @@ class UserCreateSerializer(BaseUserCreateSerializer):
         
         # Activation policy:
         # - Staff/Admin accounts require admin activation (inactive by default)
-        # - Parent accounts: follow Djoser activation email setting; otherwise active
+        # - Parent/Viewer accounts: follow Djoser activation email setting; otherwise active
         if user_type in ('staff', 'admin'):
             user.is_active = False
             user.is_verified = False
         else:
-            # Parent accounts
+            # Parent and Viewer accounts
             if djoser_settings.SEND_ACTIVATION_EMAIL:
                 user.is_active = False
             else:
@@ -83,6 +83,7 @@ class UserCreateSerializer(BaseUserCreateSerializer):
             user.is_active = False
             user.is_verified = False
         else:
+            # Parent and Viewer accounts
             if djoser_settings.SEND_ACTIVATION_EMAIL:
                 user.is_active = False
             else:

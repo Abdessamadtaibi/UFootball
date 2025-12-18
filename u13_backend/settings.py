@@ -25,13 +25,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = config('SECRET_KEY', default='django-insecure-$ai@8gc81k3t(^dv_rjtkufft2wa)4w@up_cz2rn2#7^%dd1il')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = config('DEBUG', default=True, cast=bool)
+DEBUG = False
 
-ALLOWED_HOSTS = ['localhost','www.ufootball.siliad.ma','ufootball.siliad.ma']
+ALLOWED_HOSTS = ['127.0.0.1','localhost','www.ufootball.siliad.ma','ufootball.siliad.ma']
 
 CORS_ALLOW_ALL_ORIGINS = True
 CORS_ALLOWED_ORIGINS = [
-    'https://localhost',
     'https://www.ufootball.siliad.ma',
     'https://ufootball.siliad.ma',
    ]
@@ -138,7 +137,7 @@ TIME_ZONE = 'Europe/Paris'
 
 USE_I18N = True
 
-USE_TZ = True
+USE_TZ = False  # Set to False to avoid MySQL timezone tables requirement
 
 
 # Static files (CSS, JavaScript, Images)
@@ -229,7 +228,7 @@ CORS_ALLOW_ALL_ORIGINS = DEBUG  # Only in development
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
-EMAIL_HOST_USER = 'co.espaces@gmail.com'
-EMAIL_HOST_PASSWORD = 'bdzqdhrhexuiyivh'
+EMAIL_HOST_USER = 'abdessamadtaibi.xyz@gmail.com'
+EMAIL_HOST_PASSWORD = 'xhfgxbgtwutougeb'
 EMAIL_USE_TLS = True
-DEFAULT_FROM_EMAIL = 'no-reply@co-espace.com'
+DEFAULT_FROM_EMAIL = 'no-reply@u-football.com'

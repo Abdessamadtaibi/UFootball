@@ -7,12 +7,9 @@ User = get_user_model()
 
 
 class Club(models.Model):
-    """
-    Modèle pour les clubs de football
-    """
+
     name = models.CharField(max_length=200, verbose_name="Nom du club",unique=True)
     short_name = models.CharField(max_length=10, verbose_name="Nom court", help_text="Ex: PSG, OM",unique=True)
-    # Propriétaire (créateur) du club
     owner = models.ForeignKey(
         User,
         on_delete=models.SET_NULL,
@@ -53,17 +50,22 @@ class Club(models.Model):
 
 
 class Team(models.Model):
-    """
-    Modèle pour les équipes U13
-    """
     
     CATEGORY_CHOICES = (
-        ('u13', 'U13'),
+        ('u10', 'U10'),
+        ('u11', 'U11'),
         ('u12', 'U12'),
+        ('u13', 'U13'),
         ('u14', 'U14'),
+        ('u15', 'U15'),
+        ('u16', 'U16'),
+        ('u17', 'U17'),
+        ('u18', 'U18'),
+        ('u19', 'U19'),
+        ('u20', 'U20'),
+        ('u21', 'U21')
     )
     
-    # Informations de base
     club = models.ForeignKey(Club, on_delete=models.CASCADE, related_name='teams')
     name = models.CharField(max_length=200, verbose_name="Nom de l'équipe")
     category = models.CharField(max_length=5, choices=CATEGORY_CHOICES, default='u13')
@@ -170,6 +172,11 @@ class Player(models.Model):
     parent_name = models.CharField(max_length=200, blank=True, verbose_name="Nom du parent/tuteur")
     parent_phone = models.CharField(max_length=20, blank=True, verbose_name="Téléphone du parent")
     parent_email = models.EmailField(blank=True, verbose_name="Email du parent")
+    
+    # Second parent/guardian contact info
+    parent2_name = models.CharField(max_length=200, blank=True, verbose_name="Nom du 2ème parent/tuteur")
+    parent2_phone = models.CharField(max_length=20, blank=True, verbose_name="Téléphone du 2ème parent")
+    parent2_email = models.EmailField(blank=True, verbose_name="Email du 2ème parent")
     
     # Métadonnées
     is_active = models.BooleanField(default=True)

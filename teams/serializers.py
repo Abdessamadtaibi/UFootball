@@ -132,6 +132,7 @@ class PlayerSerializer(serializers.ModelSerializer):
             'height', 'weight', 'photo', 'photo_url',
             'goals_scored', 'assists', 'yellow_cards', 'red_cards', 'minutes_played',
             'parent_name', 'parent_phone', 'parent_email',
+            'parent2_name', 'parent2_phone', 'parent2_email',
             'is_active', 'created_at', 'updated_at'
         ]
         read_only_fields = ['created_at', 'updated_at']

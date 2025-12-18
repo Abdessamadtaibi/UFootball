@@ -75,6 +75,23 @@ class IsStaffOrCoachUserType(IsAuthenticatedAnd):
             getattr(user, 'is_coach', lambda: False)()
         )
 
+
+class IsViewerUserType(IsAuthenticatedAnd):
+    """Permission: Viewer user type (read-only access to tournaments and matches)."""
+    def _passes(self, user):
+        return getattr(user, 'is_viewer', lambda: False)()
+
+
+class IsViewerOrAdminOrStaffOrParentUserType(IsAuthenticatedAnd):
+    """Permission: Allows viewers, admins, staff, and parents."""
+    def _passes(self, user):
+        return (
+            getattr(user, 'is_admin_user', lambda: False)() or
+            getattr(user, 'is_staff_member', lambda: False)() or
+            getattr(user, 'is_parent', lambda: False)() or
+            getattr(user, 'is_viewer', lambda: False)()
+        )
+
 class IsCoachOrAdminForTeam(BasePermission):
     """
     Object-level permission for Team management:

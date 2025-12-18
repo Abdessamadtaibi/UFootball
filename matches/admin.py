@@ -33,7 +33,6 @@ class MatchAdmin(admin.ModelAdmin):
     list_filter = ('status', 'tournament', 'scheduled_date', 'venue_name')
     search_fields = ('home_team__name', 'away_team__name', 'tournament__name', 'venue_name')
     ordering = ('-scheduled_date',)
-    date_hierarchy = 'scheduled_date'
     
     fieldsets = (
         ('Identifiants', {

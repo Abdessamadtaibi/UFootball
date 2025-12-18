@@ -78,6 +78,8 @@ class Match(models.Model):
     attendance = models.PositiveIntegerField(null=True, blank=True, verbose_name="Nombre de spectateurs")
     notes = models.TextField(blank=True, verbose_name="Notes du match")
     
+    # Match number/round (like tournaments model)
+    round_number = models.PositiveIntegerField(default=1, help_text="Journée/Tour")
     # Métadonnées
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

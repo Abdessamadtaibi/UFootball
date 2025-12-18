@@ -12,7 +12,7 @@ class ClubAdmin(admin.ModelAdmin):
     
     fieldsets = (
         ('Informations générales', {
-            'fields': ('name', 'short_name', 'logo', 'is_active')
+            'fields': ('name', 'short_name', 'owner', 'logo', 'is_active')
         }),
         ('Localisation', {
             'fields': ('address', 'phone', 'email', 'website')
@@ -117,8 +117,12 @@ class PlayerAdmin(admin.ModelAdmin):
         ('Équipe', {
             'fields': ('team', 'jersey_number', 'position', 'is_active')
         }),
-        ('Contacts d\'urgence', {
+        ('Contacts d\'urgence - Parent 1', {
             'fields': ('parent_name', 'parent_phone', 'parent_email'),
+            'classes': ('collapse',)
+        }),
+        ('Contacts d\'urgence - Parent 2', {
+            'fields': ('parent2_name', 'parent2_phone', 'parent2_email'),
             'classes': ('collapse',)
         }),
         ('Informations médicales', {

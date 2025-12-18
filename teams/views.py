@@ -110,7 +110,8 @@ class MyPlayersView(ListAPIView):
         user = self.request.user
         queryset = Player.objects.filter(
             Q(team__followers=user) |
-            Q(parent_email=user.email)
+            Q(parent_email=user.email) |
+            Q(parent2_email=user.email)
         ).distinct()
         
         return queryset

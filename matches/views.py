@@ -69,9 +69,11 @@ def get_user_allowed_matches(user):
         # Teams followed directly
         followed_teams_ids = list(Team.objects.filter(followers=user).values_list('id', flat=True))
         
-        # Teams where user is parent of a player (by email)
+        # Teams where user is parent of a player (by email - check both parent emails)
         if user.email:
-            player_teams_ids = list(Player.objects.filter(parent_email=user.email).values_list('team_id', flat=True))
+            player_teams_ids = list(Player.objects.filter(
+                Q(parent_email=user.email) | Q(parent2_email=user.email)
+            ).values_list('team_id', flat=True))
             followed_teams_ids.extend(player_teams_ids)
         
         # Unique team IDs
@@ -967,7 +969,7 @@ class PlayerStatsView(APIView):
             # Or if user follows the team? User request said "parent list the myplayer stats"
             # Assuming "myplayer" means their own child.
             player = get_object_or_404(Player, id=player_id)
-            if player.parent_email == user.email:
+            if player.parent_email == user.email or player.parent2_email == user.email:
                 has_access = True
         
         if not has_access:

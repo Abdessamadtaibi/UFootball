@@ -102,7 +102,7 @@ class MatchListSerializer(serializers.ModelSerializer):
             'id', 'home_team', 'home_team_name', 'home_team_logo',
             'away_team', 'away_team_name', 'away_team_logo',
             'tournament', 'tournament_name', 'scheduled_date', 'status',
-            'home_score', 'away_score', 'venue', 'venue_name',
+            'home_score', 'away_score', 'venue', 'venue_name', 'round_number',
             'created_by', 'last_updated_by', 'created_at', 'updated_at'
         )
 
