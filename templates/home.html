@@ -1,0 +1,502 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UFootball - L'Écosystème Ultime du Football</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap');
+
+        :root {
+            --bg-color: #0A0A0A;
+            --surface-color: #1A1A1A;
+            --card-color: #1E1E1E;
+            --border-color: #2A2A2A;
+            --primary-color: #67b0dd;
+            --primary-hover: #559ac2;
+            --accent-color: #ebba1b;
+            --accent-hover: #d1a518;
+            --text-main: #FFFFFF;
+            --text-secondary: #B0B0B0;
+            --text-muted: #808080;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Outfit', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        /* Arrière-plan avec contrôle de l'opacité */
+        .bg-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: url('{% static "images/background-GT.png" %}');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            opacity: 0.25; 
+            z-index: -1;
+        }
+
+        /* Barre de navigation */
+        nav {
+            padding: 15px 5%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            background-color: rgba(10, 10, 10, 0.5);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+        }
+
+        .logo {
+            font-size: 26px;
+            font-weight: 700;
+            color: var(--text-main);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .logo span {
+            color: var(--primary-color);
+        }
+
+        /* Section Hero */
+        .hero {
+            text-align: center;
+            padding: 100px 20px;
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+
+        .hero h1 {
+            font-size: 64px;
+            margin-bottom: 24px;
+            font-weight: 700;
+            animation: fadeInUp 0.8s ease-out;
+            letter-spacing: -1px;
+        }
+
+        .hero h1 span {
+            color: var(--primary-color);
+        }
+
+        .hero p {
+            font-size: 20px;
+            color: var(--text-secondary);
+            margin-bottom: 40px;
+            max-width: 800px;
+            margin-inline: auto;
+            animation: fadeInUp 1s ease-out;
+            animation-fill-mode: both;
+        }
+
+        /* Sections de Description Détaillée */
+        .section-container {
+            padding: 40px 10%;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .description-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            margin-bottom: 80px;
+        }
+
+        .desc-card {
+            background: rgba(30, 30, 30, 0.3);
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.03);
+            border-radius: 30px;
+            padding: 40px;
+            opacity: 0;
+            transform: translateY(40px);
+            transition: all 0.8s cubic-bezier(0.2, 0.8, 0.2, 1);
+        }
+
+        .desc-card.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .desc-card i {
+            font-size: 40px;
+            color: var(--primary-color);
+            margin-bottom: 20px;
+            display: block;
+        }
+
+        .desc-card h3 {
+            font-size: 28px;
+            margin-bottom: 15px;
+            color: #fff;
+        }
+
+        .desc-card p {
+            color: var(--text-secondary);
+            font-size: 17px;
+            line-height: 1.8;
+        }
+
+        /* Barre de Fonctionnalités Clés */
+        .features-bar {
+            display: flex;
+            justify-content: space-around;
+            flex-wrap: wrap;
+            gap: 20px;
+            padding: 40px;
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 20px;
+            margin-bottom: 80px;
+            opacity: 0;
+            transition: opacity 1s ease;
+        }
+
+        .features-bar.visible {
+            opacity: 1;
+        }
+
+        .feature-item {
+            text-align: center;
+            min-width: 150px;
+        }
+
+        .feature-item span {
+            display: block;
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--primary-color);
+        }
+
+        .feature-item label {
+            color: var(--text-muted);
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* Vitrine des Applications */
+        .showcase {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 40px;
+            padding-bottom: 100px;
+        }
+
+        .app-card {
+            background-color: rgba(30, 30, 30, 0.4);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 24px;
+            padding: 45px;
+            width: 100%;
+            max-width: 480px;
+            text-align: center;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            opacity: 0;
+            transform: scale(0.9);
+        }
+
+        .app-card.visible {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        .app-card:hover {
+            transform: translateY(-15px);
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.7);
+            border-color: rgba(103, 176, 221, 0.5);
+        }
+
+        .app-icon {
+            width: 120px;
+            height: 120px;
+            margin: 0 auto 30px;
+            transition: transform 0.4s ease;
+        }
+        
+        .app-card:hover .app-icon {
+            transform: rotate(5deg) scale(1.1);
+        }
+        
+        .app-icon img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            border-radius: 28px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+        }
+
+        .app-title {
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 20px;
+        }
+
+        .app-desc {
+            color: var(--text-secondary);
+            margin-bottom: 35px;
+            min-height: 80px;
+            font-size: 17px;
+        }
+
+        .features-list {
+            list-style: none;
+            margin-bottom: 40px;
+            text-align: left;
+        }
+
+        .features-list li {
+            margin-bottom: 16px;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            font-size: 16px;
+        }
+
+        .features-list li i {
+            color: var(--primary-color);
+            font-size: 18px;
+        }
+
+        .app-card.tm .features-list li i {
+            color: var(--accent-color);
+        }
+
+        /* Boutons */
+        .btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            padding: 16px 24px;
+            border-radius: 16px;
+            font-size: 17px;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            width: 100%;
+            border: none;
+        }
+
+        .btn-primary {
+            background-color: var(--primary-color);
+            color: #fff;
+            box-shadow: 0 10px 20px rgba(103, 176, 221, 0.2);
+        }
+
+        .btn-primary:hover {
+            background-color: var(--primary-hover);
+            transform: translateY(-2px);
+            box-shadow: 0 15px 25px rgba(103, 176, 221, 0.3);
+        }
+
+        .btn-appstore {
+            background-color: #000;
+            color: #fff;
+            border: 1px solid #333;
+        }
+
+        .btn-appstore:hover {
+            background-color: #050505;
+            border-color: #555;
+            transform: translateY(-2px);
+        }
+
+        .btn-accent {
+            background-color: var(--accent-color);
+            color: #000;
+            box-shadow: 0 10px 20px rgba(235, 186, 27, 0.2);
+        }
+
+        .btn-accent:hover {
+            background-color: var(--accent-hover);
+            transform: translateY(-2px);
+            box-shadow: 0 15px 25px rgba(235, 186, 27, 0.3);
+        }
+
+        /* Pied de page */
+        footer {
+            text-align: center;
+            padding: 60px 20px;
+            border-top: 1px solid var(--border-color);
+            color: var(--text-muted);
+            background: rgba(0,0,0,0.3);
+        }
+
+        /* Animations */
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(40px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @media (max-width: 968px) {
+            .description-grid { grid-template-columns: 1fr; }
+            .hero h1 { font-size: 48px; }
+        }
+
+        @media (max-width: 768px) {
+            .hero h1 { font-size: 38px; }
+            .hero p { font-size: 17px; }
+            .section-container { padding: 40px 5%; }
+            .app-card { padding: 35px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="bg-overlay"></div>
+
+    <nav>
+        <a href="#" class="logo">
+            <img src="{% static 'images/u13-mobile-app-logo.png' %}" alt="Logo" style="height: 50px; border-radius: 12px;">
+            UFootball
+        </a>
+    </nav>
+
+    <section class="hero">
+        <h1>Connectez chaque <span>acteur</span> du match</h1>
+        <p>Un écosystème numérique unifié reliant la gestion de club, le coaching professionnel, les joueurs passionnés et les parents. La gestion du football professionnel à portée de main.</p>
+    </section>
+
+    <div class="section-container">
+        <!-- Description Technique Détaillée -->
+        <div class="description-grid">
+            <div class="desc-card anim-slide">
+                <i class="fas fa-sitemap"></i>
+                <h3>Gouvernance Centralisée</h3>
+                <p>Donnez aux administrateurs de club un contrôle total sur les catégories, les saisons techniques et l'organisation des effectifs. Gérez les rôles du personnel avec une sécurité backend granulaire.</p>
+            </div>
+            <div class="desc-card anim-slide">
+                <i class="fas fa-calendar-alt"></i>
+                <h3>Planification Intelligente</h3>
+                <p>Automatisez votre calendrier. Les entraîneurs peuvent créer des séances d'entraînement récurrentes et des matchs amicaux. Notre détection de conflits garantit qu'aucune équipe ou terrain n'est jamais réservé en double.</p>
+            </div>
+            <div class="desc-card anim-slide">
+                <i class="fas fa-file-medical"></i>
+                <h3>Dossiers Joueurs Professionnels</h3>
+                <p>Capturez plus que des stats. Des autorisations médicales aux groupes sanguins, en passant par les consentements parentaux et les signatures numériques, chaque profil répond aux standards professionnels internationaux.</p>
+            </div>
+            <div class="desc-card anim-slide">
+                <i class="fas fa-tachometer-alt"></i>
+                <h3>Analyses en Temps Réel</h3>
+                <p>Suivez chaque but, passe décisive et carton. Les snapshots de saison automatisés préservent les statistiques même si les joueurs changent de catégorie, offrant un historique de performance à vie.</p>
+            </div>
+        </div>
+
+        <!-- Barre de Statistiques du Projet -->
+        <div class="features-bar anim-fade">
+            <div class="feature-item">
+                <span id="clubsCount">Signatures</span>
+                <label>Digitales</label>
+            </div>
+            <div class="feature-item">
+                <span id="matchLive">Tournois</span>
+                <label>En Direct</label>
+            </div>
+            <div class="feature-item">
+                <span id="secureData">Sécurisé</span>
+                <label>RGPD Prêt</label>
+            </div>
+            <div class="feature-item">
+                <span id="roleBase">Rôles</span>
+                <label>Contrôlés</label>
+            </div>
+        </div>
+
+        <section class="showcase">
+            <!-- Vitrine Application UFootball -->
+            <div class="app-card" id="appCard1">
+                <div class="app-icon"><img src="{% static 'images/u13-mobile-app-logo.png' %}" alt="Logo UFootball"></div>
+                <h2 class="app-title">UFootball</h2>
+                <p class="app-desc">La plateforme ultime pour les fans et les joueurs pour suivre les tournois et découvrir les clubs locaux.</p>
+                
+                <ul class="features-list">
+                    <li><i class="fas fa-trophy"></i> Classements de Tournois en Direct</li>
+                    <li><i class="fas fa-futbol"></i> Événements de Match en Temps Réel</li>
+                    <li><i class="fas fa-user-ninja"></i> Profils de Joueurs Publics</li>
+                    <li><i class="fas fa-map-marker-alt"></i> Localisation des stades et matchs</li>
+                </ul>
+
+                <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 10px;">
+                    <a href="/media/apks/ufootball.apk" class="btn btn-primary" download>
+                        <i class="fab fa-android"></i> Obtenir l'APK
+                    </a>
+                    <a href="https://apps.apple.com/ma/app/ufootball/id6759194558" target="_blank" class="btn btn-appstore">
+                        <i class="fab fa-apple"></i> Visiter l'App Store
+                    </a>
+                </div>
+            </div>
+
+            <!-- Vitrine Application UFootball TM -->
+            <div class="app-card tm" id="appCard2">
+                <div class="app-icon"><img src="{% static 'images/U13-GT.png' %}" alt="Logo UFootball TM"></div>
+                <h2 class="app-title">UFootball TM</h2>
+                <p class="app-desc">La suite professionnelle "Team Manager" pour le staff, les coachs et les parents pour mener leurs équipes.</p>
+                
+                <ul class="features-list">
+                    <li><i class="fas fa-envelope-open-text"></i> Système de Convocation Intelligent</li>
+                    <li><i class="fas fa-running"></i> Suivi des présences</li>
+                    <li><i class="fas fa-lock"></i> Gestion des consentements parentaux</li>
+                    <li><i class="fas fa-history"></i> Archives de Performance</li>
+                </ul>
+
+                <a href="/media/apks/ufootball_tm.apk" class="btn btn-accent" download style="margin-top: 20px;">
+                    <i class="fab fa-android"></i> APK Outil Manager
+                </a>
+            </div>
+        </section>
+    </div>
+
+    <footer>
+        <p>&copy; 2026 Écosystème UFootball. Autonomiser les communautés de football.</p>
+        <p style="font-size: 12px; margin-top: 10px; opacity: 0.5;">Conçu pour la performance • Propulsé par Django Core</p>
+    </footer>
+
+    <script>
+        // Intersection Observer pour les animations de défilement professionnelles
+        const observerOptions = {
+            threshold: 0.15,
+            rootMargin: '0px 0px -50px 0px'
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                }
+            });
+        }, observerOptions);
+
+        document.querySelectorAll('.desc-card, .app-card, .features-bar').forEach(el => {
+            observer.observe(el);
+        });
+    </script>
+</body>
+</html>

@@ -56,7 +56,7 @@ class ConvocationSerializer(serializers.ModelSerializer):
     class Meta:
         model = Convocation
         fields = [
-            'id','player_name','status_display',
+            'id','player', 'player_name', 'status', 'status_display',
             'notified', 'notified_at', 'parent_response_at'
         ]
         read_only_fields = ['id','player_name','updated_at']

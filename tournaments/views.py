@@ -28,7 +28,7 @@ from .serializers import (
     UpdateMatchScoreSerializer,
     GroupStandingsSerializer,
 )
-from users.permissions import IsAdminUserType, IsAdminActiveUserType, IsOrganizerOrSuperUser, IsMatchCoachOrAdmin, IsAdminOrStaffOrParentUserType, IsViewerOrAdminOrStaffOrParentUserType
+from users.permissions import IsAdminUserType, IsAdminActiveUserType, IsOrganizerOrSuperUser, IsMatchCoachOrAdmin, IsAdminOrStaffOrParentUserType, IsViewerOrAdminOrStaffOrParentUserType, IsStaffOrCoachOrParentUserType
 
 
 class TournamentViewSet(viewsets.ModelViewSet):
@@ -81,7 +81,7 @@ class TournamentViewSet(viewsets.ModelViewSet):
             # Teams where user is parent of a player (by email - check both parent emails)
             if user.email:
                 player_teams_ids = list(Player.objects.filter(
-                    Q(parent_email=user.email) | Q(parent2_email=user.email)
+                    Q(father_email=user.email) | Q(mother_email=user.email)
                 ).values_list('team_id', flat=True))
                 followed_teams_ids.extend(player_teams_ids)
             
@@ -93,6 +93,15 @@ class TournamentViewSet(viewsets.ModelViewSet):
                 Q(groups__team_groups__team_id__in=team_ids)
             ).distinct().order_by('-created_at')
             
+            return queryset
+        
+        # Coach users: see tournaments where their coached teams participate
+        elif user.user_type == 'coach':
+            coached_teams = user.coached_teams.all()
+            queryset = Tournament.objects.filter(
+                Q(teamtournamentregistration__team__in=coached_teams) |
+                Q(groups__team_groups__team__in=coached_teams)
+            ).distinct().order_by('-created_at')
             return queryset
         
         # Default: return empty queryset for unknown user types
@@ -137,7 +146,7 @@ class TournamentViewSet(viewsets.ModelViewSet):
             # Teams where user is parent of a player (by email - check both parent emails)
             if request.user.email:
                 player_teams_ids = list(Player.objects.filter(
-                    Q(parent_email=request.user.email) | Q(parent2_email=request.user.email)
+                    Q(father_email=request.user.email) | Q(mother_email=request.user.email)
                 ).values_list('team_id', flat=True))
                 followed_teams_ids.extend(player_teams_ids)
             
@@ -542,7 +551,7 @@ class MatchViewSet(viewsets.ModelViewSet):
             # Teams where user is parent of a player (by email - check both parent emails)
             if user.email:
                 player_teams_ids = list(Player.objects.filter(
-                    Q(parent_email=user.email) | Q(parent2_email=user.email)
+                    Q(father_email=user.email) | Q(mother_email=user.email)
                 ).values_list('team_id', flat=True))
                 followed_teams_ids.extend(player_teams_ids)
             
@@ -698,7 +707,7 @@ class TournamentTeamsView(APIView):
             followed_teams_ids = list(Team.objects.filter(followers=user).values_list('id', flat=True))
             if user.email:
                 player_teams_ids = list(Player.objects.filter(
-                    Q(parent_email=user.email) | Q(parent2_email=user.email)
+                    Q(father_email=user.email) | Q(mother_email=user.email)
                 ).values_list('team_id', flat=True))
                 followed_teams_ids.extend(player_teams_ids)
             has_access = tournament.teamtournamentregistration_set.filter(team_id__in=followed_teams_ids).exists() or \
@@ -742,13 +751,20 @@ class TournamentStandingsView(APIView):
             followed_teams_ids = list(Team.objects.filter(followers=user).values_list('id', flat=True))
             if user.email:
                 player_teams_ids = list(Player.objects.filter(
-                    Q(parent_email=user.email) | Q(parent2_email=user.email)
+                    Q(father_email=user.email) | Q(mother_email=user.email)
                 ).values_list('team_id', flat=True))
                 followed_teams_ids.extend(player_teams_ids)
             has_access = tournament.teamtournamentregistration_set.filter(team_id__in=followed_teams_ids).exists() or \
                          tournament.groups.filter(team_groups__team_id__in=followed_teams_ids).exists()
             if not has_access:
                 raise PermissionDenied("Accès restreint aux tournois de vos équipes")
+        elif user.user_type == 'coach':
+            coached_teams = user.coached_teams.all()
+            has_access = (
+                tournament.groups.filter(team_groups__team__in=coached_teams).exists()
+            )
+            # Coaches can view standings for any tournament their teams participate in
+            # If no teams registered yet, still allow read-only access
         
         standings_data = []
         # Prefetch related data for efficiency
@@ -788,7 +804,7 @@ class TournamentStatsView(APIView):
             followed_teams_ids = list(Team.objects.filter(followers=user).values_list('id', flat=True))
             if user.email:
                 player_teams_ids = list(Player.objects.filter(
-                    Q(parent_email=user.email) | Q(parent2_email=user.email)
+                    Q(father_email=user.email) | Q(mother_email=user.email)
                 ).values_list('team_id', flat=True))
                 followed_teams_ids.extend(player_teams_ids)
             has_access = tournament.teamtournamentregistration_set.filter(team_id__in=followed_teams_ids).exists() or \

@@ -75,7 +75,7 @@ ROOT_URLCONF = 'u13_backend.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [BASE_DIR / 'templates'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -98,8 +98,8 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'ufootball',
-        'USER': 'root',
-        'PASSWORD': 'Abdou@2003',
+        'USER': 'ufootball_admin',
+        'PASSWORD': 'Abdou@24&2003',
         'HOST': 'localhost',
         'PORT': '3306',
     }
@@ -146,6 +146,9 @@ USE_TZ = False  # Set to False to avoid MySQL timezone tables requirement
 
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
+STATICFILES_DIRS = [
+    BASE_DIR / 'static',
+]
 
 # Media files
 MEDIA_URL = '/media/'

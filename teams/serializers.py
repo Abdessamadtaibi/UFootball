@@ -183,7 +183,7 @@ class TeamSerializer(serializers.ModelSerializer):
     class Meta:
         model = Team
         fields = [
-            'id', 'name', 'club_name', 'category', 'category_obj', 'category_obj_name',
+            'id', 'name', 'club', 'club_name', 'category', 'category_obj', 'category_obj_name',
             'sport', 'sport_display', 'season', 'season_name',
             'is_active', 'created_at', 'updated_at', 'players_count', 'coach',
             'default_venue'
@@ -280,6 +280,10 @@ class PlayerSerializer(serializers.ModelSerializer):
 class CoachSerializer(serializers.ModelSerializer):
     full_name = serializers.ReadOnlyField()
     supervised_category_names = serializers.SerializerMethodField()
+    # Make these fields optional as they will be fetched from the User model if missing
+    first_name = serializers.CharField(required=False)
+    last_name = serializers.CharField(required=False)
+    email = serializers.EmailField(required=False)
 
     class Meta:
         model = Coach
@@ -298,3 +302,36 @@ class CoachSerializer(serializers.ModelSerializer):
 
     def get_supervised_category_names(self, obj):
         return [cat.name for cat in obj.supervised_categories.all()]
+
+    def validate_user(self, value):
+        """Check if the user is a coach and doesn't already have a profile."""
+        if value.user_type != 'coach':
+            raise serializers.ValidationError("L'utilisateur spécifié doit avoir le type 'coach'.")
+        
+        # If we are creating (no instance), check if profile already exists
+        if not self.instance:
+            if hasattr(value, 'coach_profile'):
+                raise serializers.ValidationError("Cet utilisateur a déjà un profil coach.")
+        else:
+            # If we are updating, check if the other profile belongs to someone else
+            if hasattr(value, 'coach_profile') and value.coach_profile.pk != self.instance.pk:
+                raise serializers.ValidationError("Cet utilisateur est déjà associé à un autre profil coach.")
+                
+        return value
+
+    def validate(self, data):
+        """Automatically populate first_name, last_name, and email from User if missing."""
+        user = data.get('user')
+        if user:
+            if not data.get('first_name'):
+                data['first_name'] = user.first_name
+            if not data.get('last_name'):
+                data['last_name'] = user.last_name
+            if not data.get('email'):
+                data['email'] = user.email
+        
+        # Ensure mandatory model fields are always present even if missed in request
+        if not data.get('first_name') or not data.get('last_name') or not data.get('email'):
+             raise serializers.ValidationError("Prénom, nom et email sont requis (extraits de l'utilisateur ou fournis).")
+             
+        return data

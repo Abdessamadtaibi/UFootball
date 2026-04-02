@@ -349,7 +349,7 @@ class PlayerViewSet(viewsets.ModelViewSet):
 
     def get_permissions(self):
         if self.action in ['list', 'retrieve']:
-            permission_classes = [IsAdminOrStaffOrParentUserType]
+            permission_classes = [IsStaffOrCoachOrParentUserType]
         else:
             permission_classes = [permissions.IsAuthenticated, IsStaffUserType]
         return [permission() for permission in permission_classes]

@@ -1,3 +1,4 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="en">
 
@@ -40,18 +41,18 @@
     .logo-icon {
       width: 80px;
       height: 80px;
-      background: #00bfff;
       border-radius: 50%;
       display: inline-flex;
       align-items: center;
       justify-content: center;
       margin-bottom: 1rem;
+      overflow: hidden;
     }
 
-    .logo-icon svg {
-      width: 40px;
-      height: 40px;
-      fill: white;
+    .logo-icon img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
     }
 
     .logo-text {
@@ -113,7 +114,7 @@
       font-size: 0.95rem;
       color: #9ca3af;
       line-height: 1.6;
-      margin-bottom: 1.5rem;
+      margin-bottom: 2rem;
     }
 
     .info-box {
@@ -132,16 +133,23 @@
       line-height: 1.8;
     }
 
-    .contact-text {
-      font-size: 0.9rem;
-      color: #9ca3af;
-      margin-top: 1.5rem;
+    .btn {
+      width: 100%;
+      background: #00bfff;
+      color: white;
+      border: none;
+      padding: 14px;
+      border-radius: 12px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-block;
+      transition: background 0.3s ease;
     }
 
-    .contact-link {
-      color: #00bfff;
-      text-decoration: none;
-      font-weight: 600;
+    .btn:hover {
+      background: #0099cc;
     }
 
     @media (max-width: 500px) {
@@ -161,11 +169,6 @@
         width: 70px;
         height: 70px;
       }
-
-      .logo-icon svg {
-        width: 35px;
-        height: 35px;
-      }
     }
   </style>
 </head>
@@ -174,10 +177,7 @@
   <div class="card">
     <div class="logo-container">
       <div class="logo-icon">
-        <svg viewBox="0 0 24 24">
-          <path
-            d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,4A8,8 0 0,1 20,12A8,8 0 0,1 12,20A8,8 0 0,1 4,12A8,8 0 0,1 12,4M12,5A7,7 0 0,0 5,12A7,7 0 0,0 12,19A7,7 0 0,0 19,12A7,7 0 0,0 12,5M9,7.5A1.5,1.5 0 0,1 10.5,9A1.5,1.5 0 0,1 9,10.5A1.5,1.5 0 0,1 7.5,9A1.5,1.5 0 0,1 9,7.5M15,7.5A1.5,1.5 0 0,1 16.5,9A1.5,1.5 0 0,1 15,10.5A1.5,1.5 0 0,1 13.5,9A1.5,1.5 0 0,1 15,7.5M12,8.5A1.5,1.5 0 0,1 13.5,10A1.5,1.5 0 0,1 12,11.5A1.5,1.5 0 0,1 10.5,10A1.5,1.5 0 0,1 12,8.5M9,13.5A1.5,1.5 0 0,1 10.5,15A1.5,1.5 0 0,1 9,16.5A1.5,1.5 0 0,1 7.5,15A1.5,1.5 0 0,1 9,13.5M15,13.5A1.5,1.5 0 0,1 16.5,15A1.5,1.5 0 0,1 15,16.5A1.5,1.5 0 0,1 13.5,15A1.5,1.5 0 0,1 15,13.5Z" />
-        </svg>
+        <img src="{% static 'users/images/logo.png' %}" alt="UFootball Logo">
       </div>
       <div class="logo-text">UFootball</div>
       <div class="subtitle">Ultimate Football Experience</div>

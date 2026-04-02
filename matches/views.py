@@ -17,7 +17,12 @@ from .serializers import (
     MatchStatisticsSerializer,
     MatchReportSerializer,
 )
-from users.permissions import IsAdminUserType, IsAdminOrStaffUserType, IsMatchCoachOrAdmin,IsAdminOrStaffOrParentUserType,IsStaffOrCoachUserType, IsViewerOrAdminOrStaffOrParentUserType
+from users.permissions import (
+    IsAdminUserType, IsAdminOrStaffUserType, IsMatchCoachOrAdmin, 
+    IsAdminOrStaffOrParentUserType, IsStaffOrCoachUserType, 
+    IsViewerOrAdminOrStaffOrParentUserType, IsStaffOrCoachOrParentUserType,
+    IsAdminOrStaffOrCoachOrParentUserType
+)
 
     
 def get_user_allowed_matches(user):
@@ -46,16 +51,7 @@ def get_user_allowed_matches(user):
     # Coach users: see matches where their coached teams play
     # (Adding Coach logic explicitly as it was missing in the original get_queryset but implied by "staff/coach" in user request)
     elif getattr(user, 'user_type', '') == 'coach' or user.coached_teams.exists(): 
-        # Note: user_type might not be 'coach' if they are just a user with coached_teams? 
-        # The original code didn't have a specific 'coach' block in get_queryset, it just returned empty for unknown.
-        # But MatchViewSet had "Staff users" and "Parent users". 
-        # Let's check if 'coach' is a valid user_type or if we should check coached_teams.
-        # The original code in MatchViewSet.get_queryset didn't handle 'coach' explicitly?
-        # Wait, looking at the original file content...
-        # It had: if user.user_type == 'admin': ... elif user.user_type == 'staff': ... elif user.user_type == 'parent': ...
-        # It didn't seem to handle coaches in the list view?
-        # But perform_create had logic for coaches.
-        # Let's add coach support here to be safe and compliant with "staff/coach the matches creted or club team play in".
+
         coached_teams = user.coached_teams.all()
         if coached_teams.exists():
              return Match.objects.filter(
@@ -100,11 +96,11 @@ class MatchViewSet(viewsets.ModelViewSet):
     serializer_class = MatchSerializer
 
     def get_permissions(self):
-        # Public list/retrieve allowed for admin, staff, parent, and viewer
+        # list/retrieve: allow staff, coach, parent — coach was being rejected with 403
         if self.action in ['list', 'retrieve']:
-            permission_classes = [IsViewerOrAdminOrStaffOrParentUserType]
+            permission_classes = [permissions.IsAuthenticated]
         else:
-            # create/update/delete restricted to admin or staff users
+            # create/update/delete restricted to admin or staff/coach users
             permission_classes = [IsAdminOrStaffUserType]
         return [permission() for permission in permission_classes]
 
@@ -378,34 +374,24 @@ class MatchLineupViewSet(viewsets.ModelViewSet):
 class MatchStatisticsViewSet(viewsets.ModelViewSet):
     """ViewSet for managing match statistics"""
     queryset = MatchStatistics.objects.all()
-    permission_classes = [permissions.IsAuthenticated,IsStaffOrCoachUserType]
     serializer_class = MatchStatisticsSerializer
+
+    def get_permissions(self):
+        # Allow read access to all authorized roles, restrict modification to staff/coach/admin
+        if self.action in ['list', 'retrieve']:
+            permission_classes = [permissions.IsAuthenticated, IsAdminOrStaffOrCoachOrParentUserType]
+        else:
+            permission_classes = [permissions.IsAuthenticated, IsStaffOrCoachUserType]
+        return [permission() for permission in permission_classes]
     
     def get_queryset(self):
-        """Filter match statistics based on user type"""
+        """Filter match statistics based on allowed matches for the user"""
         user = self.request.user
-        
         if not user or not user.is_authenticated:
             return MatchStatistics.objects.none()
-        
-        # Admin users: see all statistics
-        if user.user_type == 'admin':
-            return MatchStatistics.objects.all()
-        
-        # Staff users: statistics from matches where their club's teams play
-        if user.user_type == 'staff':
-            from teams.models import Club
-            user_clubs = Club.objects.filter(owner=user)
-            return MatchStatistics.objects.filter(
-                Q(match__home_team__club__in=user_clubs) | Q(match__away_team__club__in=user_clubs)
-            ).distinct()
-        
-        # Coach users: statistics from matches where their coached teams play
-        else:
-            coached_teams = user.coached_teams.all()
-            return MatchStatistics.objects.filter(
-                Q(match__home_team__in=coached_teams) | Q(match__away_team__in=coached_teams)
-            ).distinct()
+            
+        allowed_matches = get_user_allowed_matches(user)
+        return MatchStatistics.objects.filter(match__in=allowed_matches).distinct()
 
     def perform_create(self, serializer):
         user = self.request.user
@@ -458,30 +444,24 @@ class MatchStatisticsViewSet(viewsets.ModelViewSet):
 class MatchReportViewSet(viewsets.ModelViewSet):
     """ViewSet for managing match reports"""
     queryset = MatchReport.objects.all()
-    permission_classes = [permissions.IsAuthenticated, IsStaffOrCoachUserType]
     serializer_class = MatchReportSerializer
+
+    def get_permissions(self):
+        # Allow read access to all authorized roles, restrict modification to staff/coach/admin
+        if self.action in ['list', 'retrieve']:
+            permission_classes = [permissions.IsAuthenticated, IsAdminOrStaffOrCoachOrParentUserType]
+        else:
+            permission_classes = [permissions.IsAuthenticated, IsStaffOrCoachUserType]
+        return [permission() for permission in permission_classes]
     
     def get_queryset(self):
-        """Filter match reports based on user type"""
+        """Filter match reports based on allowed matches for the user"""
         user = self.request.user
-        
         if not user or not user.is_authenticated:
             return MatchReport.objects.none()
-        
-        # Staff users: reports from matches where their club's teams play
-        if user.user_type == 'staff':
-            from teams.models import Club
-            user_clubs = Club.objects.filter(owner=user)
-            return MatchReport.objects.filter(
-                Q(match__home_team__club__in=user_clubs) | Q(match__away_team__club__in=user_clubs)
-            ).distinct()
-        
-        # Coach users: reports from matches where their coached teams play
-        else:
-            coached_teams = user.coached_teams.all()
-            return MatchReport.objects.filter(
-                Q(match__home_team__in=coached_teams) | Q(match__away_team__in=coached_teams)
-            ).distinct()
+            
+        allowed_matches = get_user_allowed_matches(user)
+        return MatchReport.objects.filter(match__in=allowed_matches).distinct()
 
     def perform_create(self, serializer):
         user = self.request.user
@@ -686,13 +666,26 @@ class RescheduleMatchView(APIView):
 # Event management views
 class MatchEventsView(APIView):
     """Nested events under a match: list/create"""
-    permission_classes = [IsAdminOrStaffUserType]
+    permission_classes = [IsAdminOrStaffOrCoachOrParentUserType]
 
     def get(self, request, match_id):
+        # Verify the user is allowed to see this match
+        match = get_object_or_404(Match, id=match_id)
+        allowed_matches = get_user_allowed_matches(request.user)
+        if not allowed_matches.filter(id=match.id).exists():
+            raise PermissionDenied("You do not have permission to view events for this match")
+            
         events = MatchEvent.objects.filter(match_id=match_id).order_by('minute', 'additional_time')
         return Response(MatchEventSerializer(events, many=True).data)
 
     def post(self, request, match_id):
+        # Only admin, staff, or coach can create events
+        user = request.user
+        if not (getattr(user, 'is_admin_user', lambda: False)() or 
+                getattr(user, 'is_staff_member', lambda: False)() or 
+                getattr(user, 'is_coach', lambda: False)()):
+            raise PermissionDenied("Only administrators, staff, or coaches can create match events")
+            
         match = get_object_or_404(Match, id=match_id)
         
         data = request.data.copy()
@@ -701,8 +694,7 @@ class MatchEventsView(APIView):
         if not team_id:
              return Response({'detail': 'team is required'}, status=status.HTTP_400_BAD_REQUEST)
              
-        # Check permissions
-        user = request.user
+        # Check permissions for specific team
         if user.user_type != 'admin':
             team = get_object_or_404(Team, id=team_id)
             
@@ -783,13 +775,26 @@ class MatchEventDetailView(APIView):
 # Lineup management views
 class MatchLineupsView(APIView):
     """Nested lineups under a match: list/create"""
-    permission_classes = [IsAdminOrStaffUserType]
+    permission_classes = [IsAdminOrStaffOrCoachOrParentUserType]
 
     def get(self, request, match_id):
+        # Verify the user is allowed to see this match
+        match = get_object_or_404(Match, id=match_id)
+        allowed_matches = get_user_allowed_matches(request.user)
+        if not allowed_matches.filter(id=match.id).exists():
+            raise PermissionDenied("You do not have permission to view lineups for this match")
+            
         lineups = MatchLineup.objects.filter(match_id=match_id).order_by('is_starter', 'position')
         return Response(MatchLineupSerializer(lineups, many=True).data)
 
     def post(self, request, match_id):
+        # Only admin, staff, or coach can create lineups
+        user = request.user
+        if not (getattr(user, 'is_admin_user', lambda: False)() or 
+                getattr(user, 'is_staff_member', lambda: False)() or 
+                getattr(user, 'is_coach', lambda: False)()):
+            raise PermissionDenied("Only administrators, staff, or coaches can create match lineups")
+            
         match = get_object_or_404(Match, id=match_id)
         
         data = request.data.copy()
@@ -798,8 +803,7 @@ class MatchLineupsView(APIView):
         if not team_id:
              return Response({'detail': 'team is required'}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Check permissions
-        user = request.user
+        # Check permissions for specific team
         if user.user_type != 'admin':
             team = get_object_or_404(Team, id=team_id)
             if user.user_type == 'staff':
