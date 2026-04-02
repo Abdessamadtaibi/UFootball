@@ -167,8 +167,11 @@
             flex-wrap: wrap;
             gap: 20px;
             padding: 40px;
-            background: rgba(255, 255, 255, 0.02);
-            border-radius: 20px;
+            background: rgba(30, 30, 30, 0.3);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 30px;
             margin-bottom: 80px;
             opacity: 0;
             transition: opacity 1s ease;
@@ -445,7 +448,7 @@
                 </ul>
 
                 <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 10px;">
-                    <a href="/media/apks/ufootball.apk" class="btn btn-primary" download>
+                    <a href="{% static 'ufootball.apk' %}" class="btn btn-primary" download>
                         <i class="fab fa-android"></i> Obtenir l'APK
                     </a>
                     <a href="https://apps.apple.com/ma/app/ufootball/id6759194558" target="_blank" class="btn btn-appstore">
@@ -467,7 +470,7 @@
                     <li><i class="fas fa-history"></i> Archives de Performance</li>
                 </ul>
 
-                <a href="/media/apks/ufootball_tm.apk" class="btn btn-accent" download style="margin-top: 20px;">
+                <a href="{% static 'ufootball-tm.apk' %}" class="btn btn-accent" download style="margin-top: 20px;">
                     <i class="fab fa-android"></i> APK Outil Manager
                 </a>
             </div>
@@ -476,7 +479,7 @@
 
     <footer>
         <p>&copy; 2026 Écosystème UFootball. Autonomiser les communautés de football.</p>
-        <p style="font-size: 12px; margin-top: 10px; opacity: 0.5;">Conçu pour la performance • Propulsé par Django Core</p>
+        <p style="font-size: 12px; margin-top: 10px; opacity: 0.5;">Conçu pour la performance</p>
     </footer>
 
     <script>
