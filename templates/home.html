@@ -1,6 +1,7 @@
 {% load static %}
 <!DOCTYPE html>
 <html lang="fr">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -48,7 +49,7 @@
             background-size: cover;
             background-position: center;
             background-attachment: fixed;
-            opacity: 0.25; 
+            opacity: 0.25;
             z-index: -1;
         }
 
@@ -241,17 +242,17 @@
             margin: 0 auto 30px;
             transition: transform 0.4s ease;
         }
-        
+
         .app-card:hover .app-icon {
             transform: rotate(5deg) scale(1.1);
         }
-        
+
         .app-icon img {
             width: 100%;
             height: 100%;
             object-fit: contain;
             border-radius: 28px;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
         }
 
         .app-title {
@@ -350,42 +351,68 @@
             padding: 60px 20px;
             border-top: 1px solid var(--border-color);
             color: var(--text-muted);
-            background: rgba(0,0,0,0.3);
+            background: rgba(0, 0, 0, 0.3);
         }
 
         /* Animations */
         @keyframes fadeInUp {
-            from { opacity: 0; transform: translateY(40px); }
-            to { opacity: 1; transform: translateY(0); }
+            from {
+                opacity: 0;
+                transform: translateY(40px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         @media (max-width: 968px) {
-            .description-grid { grid-template-columns: 1fr; }
-            .hero h1 { font-size: 48px; }
+            .description-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .hero h1 {
+                font-size: 48px;
+            }
         }
 
         @media (max-width: 768px) {
-            .hero h1 { font-size: 38px; }
-            .hero p { font-size: 17px; }
-            .section-container { padding: 40px 5%; }
-            .app-card { padding: 35px; }
+            .hero h1 {
+                font-size: 38px;
+            }
+
+            .hero p {
+                font-size: 17px;
+            }
+
+            .section-container {
+                padding: 40px 5%;
+            }
+
+            .app-card {
+                padding: 35px;
+            }
         }
     </style>
 </head>
+
 <body>
 
     <div class="bg-overlay"></div>
 
     <nav>
         <a href="#" class="logo">
-            <img src="{% static 'images/u13-mobile-app-logo.png' %}" alt="Logo" style="height: 50px; border-radius: 12px;">
+            <img src="{% static 'images/u13-mobile-app-logo.png' %}" alt="Logo"
+                style="height: 50px; border-radius: 12px;">
             UFootball
         </a>
     </nav>
 
     <section class="hero">
         <h1>Connectez chaque <span>acteur</span> du match</h1>
-        <p>Un écosystème numérique unifié reliant la gestion de club, le coaching professionnel, les joueurs passionnés et les parents. La gestion du football professionnel à portée de main.</p>
+        <p>Un écosystème numérique unifié reliant la gestion de club, le coaching professionnel, les joueurs passionnés
+            et les parents. La gestion du football professionnel à portée de main.</p>
     </section>
 
     <div class="section-container">
@@ -394,22 +421,29 @@
             <div class="desc-card anim-slide">
                 <i class="fas fa-sitemap"></i>
                 <h3>Gouvernance Centralisée</h3>
-                <p>Donnez aux administrateurs de club un contrôle total sur les catégories, les saisons techniques et l'organisation des effectifs. Gérez les rôles du personnel avec une sécurité backend granulaire.</p>
+                <p>Donnez aux administrateurs de club un contrôle total sur les catégories, les saisons techniques et
+                    l'organisation des effectifs. Gérez les rôles du personnel avec une sécurité backend granulaire.</p>
             </div>
             <div class="desc-card anim-slide">
                 <i class="fas fa-calendar-alt"></i>
                 <h3>Planification Intelligente</h3>
-                <p>Automatisez votre calendrier. Les entraîneurs peuvent créer des séances d'entraînement récurrentes et des matchs amicaux. Notre détection de conflits garantit qu'aucune équipe ou terrain n'est jamais réservé en double.</p>
+                <p>Automatisez votre calendrier. Les entraîneurs peuvent créer des séances d'entraînement récurrentes et
+                    des matchs amicaux. Notre détection de conflits garantit qu'aucune équipe ou terrain n'est jamais
+                    réservé en double.</p>
             </div>
             <div class="desc-card anim-slide">
                 <i class="fas fa-file-medical"></i>
                 <h3>Dossiers Joueurs Professionnels</h3>
-                <p>Capturez plus que des stats. Des autorisations médicales aux groupes sanguins, en passant par les consentements parentaux et les signatures numériques, chaque profil répond aux standards professionnels internationaux.</p>
+                <p>Capturez plus que des stats. Des autorisations médicales aux groupes sanguins, en passant par les
+                    consentements parentaux et les signatures numériques, chaque profil répond aux standards
+                    professionnels internationaux.</p>
             </div>
             <div class="desc-card anim-slide">
                 <i class="fas fa-tachometer-alt"></i>
                 <h3>Analyses en Temps Réel</h3>
-                <p>Suivez chaque but, passe décisive et carton. Les snapshots de saison automatisés préservent les statistiques même si les joueurs changent de catégorie, offrant un historique de performance à vie.</p>
+                <p>Suivez chaque but, passe décisive et carton. Les snapshots de saison automatisés préservent les
+                    statistiques même si les joueurs changent de catégorie, offrant un historique de performance à vie.
+                </p>
             </div>
         </div>
 
@@ -436,10 +470,12 @@
         <section class="showcase">
             <!-- Vitrine Application UFootball -->
             <div class="app-card" id="appCard1">
-                <div class="app-icon"><img src="{% static 'images/u13-mobile-app-logo.png' %}" alt="Logo UFootball"></div>
+                <div class="app-icon"><img src="{% static 'images/u13-mobile-app-logo.png' %}" alt="Logo UFootball">
+                </div>
                 <h2 class="app-title">UFootball</h2>
-                <p class="app-desc">La plateforme ultime pour les fans et les joueurs pour suivre les tournois et découvrir les clubs locaux.</p>
-                
+                <p class="app-desc">La plateforme ultime pour les fans et les joueurs pour suivre les tournois et
+                    découvrir les clubs locaux.</p>
+
                 <ul class="features-list">
                     <li><i class="fas fa-trophy"></i> Classements de Tournois en Direct</li>
                     <li><i class="fas fa-futbol"></i> Événements de Match en Temps Réel</li>
@@ -448,10 +484,11 @@
                 </ul>
 
                 <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 10px;">
-                    <a href="{% static 'ufootball.apk' %}" class="btn btn-primary" download>
+                    <a href="{% static 'ufootball-v2.apk' %}" class="btn btn-primary" download>
                         <i class="fab fa-android"></i> Obtenir l'APK
                     </a>
-                    <a href="https://apps.apple.com/ma/app/ufootball/id6759194558" target="_blank" class="btn btn-appstore">
+                    <a href="https://apps.apple.com/ma/app/ufootball/id6759194558" target="_blank"
+                        class="btn btn-appstore">
                         <i class="fab fa-apple"></i> Visiter l'App Store
                     </a>
                 </div>
@@ -461,8 +498,9 @@
             <div class="app-card tm" id="appCard2">
                 <div class="app-icon"><img src="{% static 'images/U13-GT.png' %}" alt="Logo UFootball TM"></div>
                 <h2 class="app-title">UFootball TM</h2>
-                <p class="app-desc">La suite professionnelle "Team Manager" pour le staff, les coachs et les parents pour mener leurs équipes.</p>
-                
+                <p class="app-desc">La suite professionnelle "Team Manager" pour le staff, les coachs et les parents
+                    pour mener leurs équipes.</p>
+
                 <ul class="features-list">
                     <li><i class="fas fa-envelope-open-text"></i> Système de Convocation Intelligent</li>
                     <li><i class="fas fa-running"></i> Suivi des présences</li>
@@ -470,7 +508,7 @@
                     <li><i class="fas fa-history"></i> Archives de Performance</li>
                 </ul>
 
-                <a href="{% static 'ufootball-tm.apk' %}" class="btn btn-accent" download style="margin-top: 20px;">
+                <a href="{% static 'ufootball-tm-v2.apk' %}" class="btn btn-accent" download style="margin-top: 20px;">
                     <i class="fab fa-android"></i> APK Outil Manager
                 </a>
             </div>
@@ -502,4 +540,5 @@
         });
     </script>
 </body>
+
 </html>

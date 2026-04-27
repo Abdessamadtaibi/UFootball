@@ -29,12 +29,14 @@ SECRET_KEY = os.getenv('SECRET_KEY')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv('DEBUG', default=False)
 
-ALLOWED_HOSTS = ['www.ufootball.siliad.ma','ufootball.siliad.ma']
-
-CORS_ALLOWED_ORIGINS = [
-    'https://www.ufootball.siliad.ma',
-    'https://ufootball.siliad.ma',
-  ]
+#ALLOWED_HOSTS = ['www.ufootball.siliad.ma','ufootball.siliad.ma','192.168.1.37']
+ALLOWED_HOSTS = ['*']
+CORS_ALLOW_ALL_ORIGINS = True
+#CORS_ALLOWED_ORIGINS = [
+ #   'https://www.ufootball.siliad.ma',
+  #  'https://ufootball.siliad.ma',
+   # 'http://192.168.1.37',
+  # ]
 
 # Application definition
 INSTALLED_APPS = [
