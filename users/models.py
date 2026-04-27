@@ -19,6 +19,8 @@ class User(AbstractUser):
     
     # Champs de base
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    # Override username from AbstractUser: make it optional (email is used for login)
+    username = models.CharField(max_length=150, blank=True, default='')
     email = models.EmailField(unique=True)
     first_name = models.CharField(max_length=30)
     last_name = models.CharField(max_length=30)
@@ -48,13 +50,19 @@ class User(AbstractUser):
     
     # Configuration pour l'authentification
     USERNAME_FIELD = 'email'
-    REQUIRED_FIELDS = ['phone_number','user_type','username', 'first_name', 'last_name']
+    REQUIRED_FIELDS = ['first_name', 'last_name', 'user_type']
     
     class Meta:
         db_table = 'users'
         verbose_name = 'Utilisateur'
         verbose_name_plural = 'Utilisateurs'
     
+    def save(self, *args, **kwargs):
+        # Auto-populate username from email if not set
+        if not self.username:
+            self.username = self.email
+        super().save(*args, **kwargs)
+
     def __str__(self):
         return f"{self.first_name} {self.last_name} ({self.get_user_type_display()})"
     

@@ -8,9 +8,6 @@ User = get_user_model()
 
 
 class Tournament(models.Model):
-    """
-    Modèle pour les tournois U13
-    """
     
     STATUS_CHOICES = (
         ('upcoming', 'À venir'),
@@ -102,6 +99,38 @@ class Tournament(models.Model):
     registration_open = models.BooleanField(default=True, verbose_name="Inscriptions ouvertes")
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    # 1. Used in generate_group_stage_matches (for Home/Away)
+    number_of_legs = models.PositiveIntegerField(
+        default=1,
+        help_text="1 pour un aller simple, 2 pour aller-retour"
+    )
+
+    # 2. Used in generate_knockout_bracket to avoid generating twice
+    bracket_generated = models.BooleanField(
+        default=False,
+        verbose_name="Arbre éliminatoire généré"
+    )
+
+    # 3. Used to determine if a 3rd place match should be created
+    third_place_match = models.BooleanField(
+        default=True,
+        verbose_name="Jouer le match pour la 3ème place"
+    )
+
+    # 4. Used in propagate_winner to save the final podium
+    winner = models.ForeignKey(
+        'teams.Team', on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='tournaments_won', verbose_name="Vainqueur"
+    )
+    runner_up = models.ForeignKey(
+        'teams.Team', on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='tournaments_runner_up', verbose_name="Deuxième"
+    )
+    third_place = models.ForeignKey(
+        'teams.Team', on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='tournaments_third_place', verbose_name="Troisième"
+    )
     
     class Meta:
         db_table = 'tournaments'
@@ -138,6 +167,22 @@ class Tournament(models.Model):
     @property
     def can_register(self):
         return self.registration_open and not self.is_full and self.status == 'upcoming'
+
+    @property
+    def group_stage_complete(self):
+        group_matches = self.tournament_matches.filter(group__isnull=False)
+        if not group_matches.exists():
+            return False
+        return not group_matches.exclude(status='finished').exists()
+
+    @property
+    def knockout_stage_complete(self):
+        knockout_matches = self.tournament_matches.filter(
+            group__isnull=True, phase__isnull=False
+        )
+        if not knockout_matches.exists():
+            return False
+        return not knockout_matches.exclude(status='finished').exists()
 
 
 class TournamentGroup(models.Model):
@@ -295,15 +340,17 @@ class TeamGroup(models.Model):
 
 # NEW MODEL: Matches
 class Match(models.Model):
-    """
-    Matches within tournaments
-    """
+
     STATUS_CHOICES = (
         ('scheduled', 'Programmé'),
         ('live', 'En cours'),
         ('finished', 'Terminé'),
         ('postponed', 'Reporté'),
         ('cancelled', 'Annulé'),
+    )
+    NEXT_MATCH_SLOT_CHOICES = (
+        ('home', 'Domicile'),
+        ('away', 'Extérieur'),
     )
     
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -314,10 +361,18 @@ class Match(models.Model):
     group = models.ForeignKey(TournamentGroup, on_delete=models.CASCADE, null=True, blank=True, related_name='matches')
     phase = models.ForeignKey(TournamentPhase, on_delete=models.CASCADE, null=True, blank=True, related_name='matches')
     
-    # Teams
+    # Teams — nullable to support knockout placeholder matches (teams filled in as bracket progresses)
     # Distinct reverse names to avoid clash with matches app
-    home_team = models.ForeignKey('teams.Team', on_delete=models.CASCADE, related_name='tournament_home_matches')
-    away_team = models.ForeignKey('teams.Team', on_delete=models.CASCADE, related_name='tournament_away_matches')
+    home_team = models.ForeignKey(
+        'teams.Team', on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='tournament_home_matches'
+    )
+    away_team = models.ForeignKey(
+        'teams.Team', on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='tournament_away_matches'
+    )
     
     # Match details
     match_date = models.DateTimeField(verbose_name="Date du match")
@@ -333,6 +388,41 @@ class Match(models.Model):
     # Match number/round
     match_number = models.PositiveIntegerField(null=True, blank=True)
     round_number = models.PositiveIntegerField(default=1, help_text="Journée/Tour")
+
+    bracket_position = models.PositiveIntegerField(
+        null=True, blank=True,
+        help_text="Position in the bracket (1, 2, 3...)"
+    )
+    bracket_round = models.PositiveIntegerField(
+        null=True, blank=True,
+        help_text="Round number in the knockout bracket"
+    )
+
+    # Link to next match (winner goes here)
+    next_match = models.ForeignKey(
+        'self', on_delete=models.SET_NULL,
+        null=True, blank=True,
+        related_name='previous_matches',
+        help_text="Le vainqueur avance vers ce match"
+    )
+    next_match_slot = models.CharField(
+        max_length=4,
+        choices=NEXT_MATCH_SLOT_CHOICES,
+        null=True, blank=True,
+        help_text="Le vainqueur sera placé en tant que domicile ou extérieur"
+    )
+
+    # Placeholder label for display before teams are determined
+    home_team_placeholder = models.CharField(
+        max_length=100, blank=True, default='',
+        help_text="Ex: 'Vainqueur QF1', 'Premier Groupe A'"
+    )
+    away_team_placeholder = models.CharField(
+        max_length=100, blank=True, default='',
+        help_text="Ex: 'Vainqueur QF2', 'Deuxième Groupe B'"
+    )
+
+    is_third_place_match = models.BooleanField(default=False)
     
     # Metadata
     created_at = models.DateTimeField(auto_now_add=True)
@@ -346,7 +436,10 @@ class Match(models.Model):
         ordering = ['match_date', 'match_number']
     
     def __str__(self):
-        return f"{self.home_team.name} vs {self.away_team.name} - {self.match_date.strftime('%d/%m/%Y')}"
+        home = self.home_team.name if self.home_team else (self.home_team_placeholder or '?')
+        away = self.away_team.name if self.away_team else (self.away_team_placeholder or '?')
+        date_str = self.match_date.strftime('%d/%m/%Y') if self.match_date else ''
+        return f"{home} vs {away} - {date_str}"
     
     def clean(self):
         """Validate match"""
@@ -371,7 +464,23 @@ class Match(models.Model):
         elif self.away_score > self.home_score:
             return self.away_team
         return None  # Draw
+    @property
+    def loser(self):
+        if self.status != 'finished' :
+            return None
+        if self.home_score > self.away_score:
+            return self.away_team
+        elif self.away_score > self.home_score:
+            return self.home_team
+        return None
 
+    @property
+    def is_placeholder(self):
+        return self.home_team is None or self.away_team is None
+
+    @property
+    def is_knockout(self):
+        return self.group is None and self.phase is not None
 
 class TournamentNews(models.Model):
     """

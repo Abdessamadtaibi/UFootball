@@ -86,7 +86,7 @@ class MatchAdmin(admin.ModelAdmin):
             'fields': ('id', 'tournament', 'group', 'phase')
         }),
         ('Équipes', {
-            'fields': ('home_team', 'away_team')
+            'fields': ('home_team', 'home_team_placeholder', 'away_team', 'away_team_placeholder')
         }),
         ('Date et lieu', {
             'fields': ('match_date', 'venue')
@@ -104,7 +104,9 @@ class MatchAdmin(admin.ModelAdmin):
     )
     
     def match_display(self, obj):
-        return f"{obj.home_team.name} vs {obj.away_team.name}"
+        home = obj.home_team.name if obj.home_team else (obj.home_team_placeholder or '?')
+        away = obj.away_team.name if obj.away_team else (obj.away_team_placeholder or '?')
+        return f"{home} vs {away}"
     match_display.short_description = 'Match'
     
     def score_display(self, obj):

@@ -20,7 +20,6 @@ class TournamentSerializer(serializers.ModelSerializer):
 
 
 class TeamGroupSerializer(serializers.ModelSerializer):
-    """Serializer for TeamGroup model"""
     team_name = serializers.CharField(source='team.name', read_only=True)
     team_logo = serializers.SerializerMethodField()
     group_name = serializers.CharField(source='group.name', read_only=True)
@@ -97,42 +96,92 @@ class GroupStandingsSerializer(serializers.Serializer):
         return None
 
 
+# Add these to your existing serializers.py
+
 class MatchSerializer(serializers.ModelSerializer):
-    """Serializer for Match model"""
-    home_team_name = serializers.CharField(source='home_team.name', read_only=True)
-    away_team_name = serializers.CharField(source='away_team.name', read_only=True)
+
+    home_team_name = serializers.SerializerMethodField()
+    away_team_name = serializers.SerializerMethodField()
     home_team_logo = serializers.SerializerMethodField()
     away_team_logo = serializers.SerializerMethodField()
     group_name = serializers.CharField(source='group.name', read_only=True, allow_null=True)
     phase_name = serializers.CharField(source='phase.name', read_only=True, allow_null=True)
+    phase_type = serializers.CharField(source='phase.phase_type', read_only=True, allow_null=True)
     winner_name = serializers.SerializerMethodField()
-    phase_id = serializers.PrimaryKeyRelatedField(queryset=TournamentPhase.objects.all(), source='phase', write_only=True, required=False, allow_null=True)
-    group_id = serializers.PrimaryKeyRelatedField(queryset=TournamentGroup.objects.all(), source='group', write_only=True, required=False, allow_null=True)
-    
+    loser_name = serializers.SerializerMethodField()
+    is_placeholder = serializers.BooleanField(read_only=True)
+    is_knockout = serializers.BooleanField(read_only=True)
+
+    # Bracket info
+    next_match_id = serializers.PrimaryKeyRelatedField(
+        source='next_match', read_only=True
+    )
+
     class Meta:
         model = Match
-        fields = ['id', 'tournament', 'group', 'group_name', 'group_id', 'phase', 'phase_name', 'phase_id',
-                  'home_team', 'home_team_name', 'home_team_logo',
-                  'away_team', 'away_team_name', 'away_team_logo',
-                  'match_date', 'venue', 'home_score', 'away_score',
-                  'status', 'match_number', 'round_number', 'winner_name',
-                  'created_at', 'updated_at']
+        fields = [
+            'id', 'tournament', 'group', 'group_name',
+            'phase', 'phase_name', 'phase_type',
+            'home_team', 'home_team_name', 'home_team_logo',
+            'home_team_placeholder',
+            'away_team', 'away_team_name', 'away_team_logo',
+            'away_team_placeholder',
+            'match_date', 'venue', 'home_score', 'away_score',
+            'status', 'match_number', 'round_number',
+            'bracket_position', 'bracket_round',
+            'next_match_id', 'next_match_slot',
+            'is_third_place_match',
+            'is_placeholder', 'is_knockout',
+            'winner_name', 'loser_name',
+            'created_at', 'updated_at',
+        ]
         read_only_fields = ('id', 'created_at', 'updated_at', 'tournament')
-    
+
+    def get_home_team_name(self, obj):
+        if obj.home_team:
+            return obj.home_team.name
+        return obj.home_team_placeholder or 'À déterminer'
+
+    def get_away_team_name(self, obj):
+        if obj.away_team:
+            return obj.away_team.name
+        return obj.away_team_placeholder or 'À déterminer'
+
     def get_home_team_logo(self, obj):
         if obj.home_team and obj.home_team.club and obj.home_team.club.logo:
             return obj.home_team.club.logo.url
         return None
-    
+
     def get_away_team_logo(self, obj):
         if obj.away_team and obj.away_team.club and obj.away_team.club.logo:
             return obj.away_team.club.logo.url
         return None
-    
-    def get_winner_name(self, obj):
-        winner = obj.winner
-        return winner.name if winner else None
 
+    def get_winner_name(self, obj):
+        w = obj.winner
+        return w.name if w else None
+
+    def get_loser_name(self, obj):
+        l = obj.loser
+        return l.name if l else None
+
+
+class KnockoutBracketSerializer(serializers.Serializer):
+    """Serializer for the full knockout bracket view."""
+    phase_type = serializers.CharField()
+    phase_name = serializers.CharField()
+    phase_order = serializers.IntegerField()
+    is_completed = serializers.BooleanField()
+    matches = MatchSerializer(many=True)
+
+
+class TournamentAutomationSerializer(serializers.Serializer):
+    """Serializer for automation action responses."""
+    message = serializers.CharField()
+    matches_created = serializers.IntegerField(required=False)
+    phases_created = serializers.ListField(
+        child=serializers.CharField(), required=False
+    )
 
 class CreateMatchSerializer(serializers.Serializer):
     """Serializer for creating a match"""

@@ -9,6 +9,9 @@ from django.db.models import Q, Count
 from rest_framework.exceptions import PermissionDenied, ValidationError
 from teams.models import Team, Player
 from matches.models import MatchLineup
+from .services import TournamentEngine
+from .serializers import KnockoutBracketSerializer, TournamentAutomationSerializer
+
 
 from .models import (
     Tournament, TournamentGroup, TournamentPhase,
@@ -341,6 +344,189 @@ class TournamentViewSet(viewsets.ModelViewSet):
             status=status.HTTP_201_CREATED
         )
 
+    @action(detail=True, methods=['post'], url_path='generate-group-matches')
+    def generate_group_matches(self, request, id=None):
+        """
+        Auto-generate all group stage matches based on tournament rules.
+        Call this after all teams have been assigned to groups.
+        """
+        tournament = self.get_object()
+
+        if tournament.organizer != request.user and not request.user.is_superuser:
+            raise PermissionDenied("Seul l'organisateur peut générer les matchs")
+
+        # Check there are no existing group matches
+        existing = Match.objects.filter(tournament=tournament, group__isnull=False).count()
+        if existing > 0:
+            raise ValidationError(
+                f"Il y a déjà {existing} matchs de groupe. "
+                "Supprimez-les d'abord si vous voulez régénérer."
+            )
+
+        engine = TournamentEngine(tournament)
+        try:
+            matches = engine.generate_group_stage_matches()
+        except ValueError as e:
+            raise ValidationError(str(e))
+
+        return Response({
+            'message': f'{len(matches)} matchs de groupe générés automatiquement',
+            'matches_created': len(matches),
+            'matches': MatchSerializer(
+                Match.objects.filter(tournament=tournament, group__isnull=False)
+                .order_by('match_number'),
+                many=True
+            ).data
+        }, status=status.HTTP_201_CREATED)
+
+    @action(detail=True, methods=['post'], url_path='reset-group-matches')
+    def reset_group_matches(self, request, id=None):
+        """
+        Delete all group stage matches for the tournament.
+        """
+        tournament = self.get_object()
+
+        if tournament.organizer != request.user and not request.user.is_superuser:
+            raise PermissionDenied("Seul l'organisateur peut réinitialiser les matchs")
+
+        group_matches = Match.objects.filter(tournament=tournament, group__isnull=False)
+        deleted_count = group_matches.count()
+        group_matches.delete()
+
+        return Response({
+            'message': f'{deleted_count} matchs de groupe supprimés',
+            'matches_deleted': deleted_count
+        }, status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=['post'], url_path='generate-knockout')
+    def generate_knockout(self, request, id=None):
+        """
+        Generate knockout bracket after group stage is complete.
+        Can also be triggered manually by the organizer.
+        """
+        tournament = self.get_object()
+
+        if tournament.organizer != request.user and not request.user.is_superuser:
+            raise PermissionDenied("Seul l'organisateur peut générer le tableau éliminatoire")
+
+        if tournament.bracket_generated:
+            raise ValidationError("Le tableau éliminatoire a déjà été généré.")
+
+        engine = TournamentEngine(tournament)
+        try:
+            created = engine.generate_knockout_bracket()
+        except ValueError as e:
+            raise ValidationError(str(e))
+
+        phase_names = list(created.keys())
+        total_matches = sum(len(m) for m in created.values())
+
+        return Response({
+            'message': f'Tableau éliminatoire généré: {total_matches} matchs',
+            'matches_created': total_matches,
+            'phases_created': phase_names,
+        }, status=status.HTTP_201_CREATED)
+
+    @action(detail=True, methods=['get'], url_path='bracket')
+    def bracket(self, request, id=None):
+        """
+        Get the full knockout bracket for display.
+        Returns matches organized by phase/round.
+        """
+        tournament = self.get_object()
+
+        knockout_phases = tournament.phases.exclude(
+            phase_type='group_stage'
+        ).order_by('order')
+
+        bracket_data = []
+        for phase in knockout_phases:
+            matches = phase.matches.order_by('bracket_position', 'match_number')
+            bracket_data.append({
+                'phase_type': phase.phase_type,
+                'phase_name': phase.name,
+                'phase_order': phase.order,
+                'is_completed': phase.is_completed,
+                'matches': MatchSerializer(matches, many=True).data,
+            })
+
+        return Response(bracket_data)
+
+    @action(detail=True, methods=['post'], url_path='reset-matches')
+    def reset_matches(self, request, id=None):
+        """
+        Delete all generated matches (for re-generation).
+        Only works if tournament hasn't started.
+        """
+        tournament = self.get_object()
+
+        if tournament.organizer != request.user and not request.user.is_superuser:
+            raise PermissionDenied("Seul l'organisateur peut réinitialiser")
+
+        match_type = request.data.get('type', 'all')  # 'all', 'group', 'knockout'
+
+        if match_type == 'group':
+            deleted, _ = Match.objects.filter(
+                tournament=tournament, group__isnull=False
+            ).delete()
+        elif match_type == 'knockout':
+            deleted, _ = Match.objects.filter(
+                tournament=tournament, group__isnull=True, phase__isnull=False
+            ).delete()
+            tournament.bracket_generated = False
+            tournament.save()
+        else:
+            deleted, _ = Match.objects.filter(tournament=tournament).delete()
+            tournament.bracket_generated = False
+            tournament.winner = None
+            tournament.runner_up = None
+            tournament.third_place = None
+            tournament.save()
+
+        # Reset qualification status
+        TeamGroup.objects.filter(
+            group__tournament=tournament
+        ).update(is_qualified=False, qualified_position=None)
+
+        return Response({
+            'message': f'{deleted} matchs supprimés',
+            'deleted_count': deleted,
+        })
+
+    @action(detail=True, methods=['get'], url_path='tournament-status')
+    def tournament_status(self, request, id=None):
+        """Get comprehensive tournament automation status."""
+        tournament = self.get_object()
+
+        group_matches = Match.objects.filter(tournament=tournament, group__isnull=False)
+        knockout_matches = Match.objects.filter(
+            tournament=tournament, group__isnull=True, phase__isnull=False
+        )
+
+        return Response({
+            'tournament_type': tournament.tournament_type,
+            'status': tournament.status,
+            'group_stage': {
+                'total_matches': group_matches.count(),
+                'finished_matches': group_matches.filter(status='finished').count(),
+                'live_matches': group_matches.filter(status='live').count(),
+                'scheduled_matches': group_matches.filter(status='scheduled').count(),
+                'is_complete': tournament.group_stage_complete,
+            },
+            'knockout_stage': {
+                'bracket_generated': tournament.bracket_generated,
+                'total_matches': knockout_matches.count(),
+                'finished_matches': knockout_matches.filter(status='finished').count(),
+                'placeholder_matches': knockout_matches.filter(
+                    Q(home_team__isnull=True) | Q(away_team__isnull=True)
+                ).count(),
+                'is_complete': tournament.knockout_stage_complete,
+            },
+            'winner': tournament.winner.name if tournament.winner else None,
+            'runner_up': tournament.runner_up.name if tournament.runner_up else None,
+            'third_place': tournament.third_place.name if tournament.third_place else None,
+        })
+
 
 class TournamentGroupViewSet(viewsets.ModelViewSet):
     """ViewSet for managing tournament groups"""
@@ -576,12 +762,27 @@ class MatchViewSet(viewsets.ModelViewSet):
         if phase_id:
             queryset = queryset.filter(phase_id=phase_id)
         if match_status:
-            queryset = queryset.filter(status=match_status)
+            if match_status == 'upcoming':
+                queryset = queryset.filter(status='scheduled')
+            elif match_status == 'live':
+                queryset = queryset.filter(Q(status='live') | Q(status='half_time'))
+            else:
+                queryset = queryset.filter(status=match_status)
             
         # Add team filter
         team_id = self.request.query_params.get('team')
         if team_id:
             queryset = queryset.filter(Q(home_team_id=team_id) | Q(away_team_id=team_id))
+            
+        # Add search filter
+        search_query = self.request.query_params.get('search')
+        if search_query:
+            queryset = queryset.filter(
+                Q(home_team__name__icontains=search_query) | 
+                Q(away_team__name__icontains=search_query) |
+                Q(home_team_placeholder__icontains=search_query) |
+                Q(away_team_placeholder__icontains=search_query)
+            )
         
         return queryset
     
@@ -631,25 +832,32 @@ class MatchViewSet(viewsets.ModelViewSet):
         match.save()
         
         return Response(MatchSerializer(match).data)
-    
+
     @action(detail=True, methods=['post'], url_path='finish')
     def finish_match(self, request, pk=None):
-        """Finish a match"""
+        """Finish a match — triggers automatic winner propagation."""
         match = self.get_object()
         tournament = match.tournament
-        
+
         perm = IsMatchCoachOrAdmin()
         is_organizer = tournament.organizer == request.user or request.user.is_superuser
-        
+
         if not is_organizer and not perm.has_object_permission(request, self, match):
             raise PermissionDenied("Seul l'organisateur ou les coachs peuvent terminer les matchs")
-        
+
         if match.status not in ['live', 'scheduled']:
             raise ValidationError("Le match doit être en cours ou programmé")
-        
+
+        # Check for draws in knockout matches (not allowed without extra logic)
+        if match.is_knockout and match.home_score == match.away_score:
+            raise ValidationError(
+                "Les matchs éliminatoires ne peuvent pas se terminer par un nul. "
+                "Mettez à jour le score avant de terminer."
+            )
+
         match.status = 'finished'
         match.save()
-        
+
         return Response(MatchSerializer(match).data)
 
 
@@ -777,7 +985,92 @@ class TournamentStandingsView(APIView):
                 'standings': GroupStandingsSerializer(group_standings, many=True).data
             })
         
-        return Response(standings_data)
+        response_data = {
+            'groups': standings_data
+        }
+
+        # Add winner/podium info (available for both league and knockout)
+        knockout_data = {}
+        if tournament.winner:
+            knockout_data['winner'] = self._get_team_data(tournament.winner, request)
+        if tournament.runner_up:
+            knockout_data['runner_up'] = self._get_team_data(tournament.runner_up, request)
+        if tournament.third_place:
+            knockout_data['third_place'] = self._get_team_data(tournament.third_place, request)
+
+        # Add knockout-specific stats if applicable
+        if tournament.tournament_type != 'league':
+            # Find semi finalists
+            semi_finalists = []
+            sf_matches = Match.objects.filter(tournament=tournament, phase__phase_type='semi_final')
+            for match in sf_matches:
+                loser = match.loser
+                if loser and loser != tournament.third_place:
+                    semi_finalists.append(self._get_team_data(loser, request))
+            
+            if semi_finalists:
+                knockout_data['semi_finalists'] = semi_finalists
+                
+            # Find quarter finalists
+            quarter_finalists = []
+            qf_matches = Match.objects.filter(tournament=tournament, phase__phase_type='quarter_final')
+            for match in qf_matches:
+                loser = match.loser
+                if loser:
+                    quarter_finalists.append(self._get_team_data(loser, request))
+                    
+            if quarter_finalists:
+                knockout_data['quarter_finalists'] = quarter_finalists
+                
+            # Find round of 16 finalists
+            round_16_finalists = []
+            r16_matches = Match.objects.filter(tournament=tournament, phase__phase_type='round_16')
+            for match in r16_matches:
+                loser = match.loser
+                if loser:
+                    round_16_finalists.append(self._get_team_data(loser, request))
+                    
+            if round_16_finalists:
+                knockout_data['round_16_finalists'] = round_16_finalists
+                
+            # Add matches for all knockout phases
+            knockout_phases = ['round_16', 'quarter_final', 'semi_final', 'third_place', 'final']
+            knockout_matches_by_phase = []
+            
+            for p_type in knockout_phases:
+                phase_matches = Match.objects.filter(tournament=tournament, phase__phase_type=p_type).order_by('match_date')
+                if phase_matches.exists():
+                    phase_obj = phase_matches.first().phase
+                    phase_name = phase_obj.name if phase_obj else dict(Match.PHASE_TYPES).get(p_type, p_type.replace('_', ' ').title())
+                    
+                    serialized_matches = MatchSerializer(phase_matches, many=True, context={'request': request}).data
+                    
+                    knockout_matches_by_phase.append({
+                        'phase_type': p_type,
+                        'phase_name': phase_name,
+                        'matches': serialized_matches
+                    })
+                    
+            if knockout_matches_by_phase:
+                knockout_data['phases'] = knockout_matches_by_phase
+        
+        # Only add knockout_data if it contains something (at least winner info)
+        if knockout_data:
+            response_data['knockout'] = knockout_data
+        
+        return Response(response_data)
+
+    def _get_team_data(self, team, request):
+        if not team:
+            return None
+        logo_url = team.club.logo.url if team.club and team.club.logo else None
+        if logo_url and request:
+            logo_url = request.build_absolute_uri(logo_url)
+        return {
+            'id': team.id,
+            'name': team.name,
+            'logo': logo_url
+        }
 
 
 class TournamentStatsView(APIView):
@@ -841,12 +1134,32 @@ class StartTournamentView(APIView):
         if tournament.status != 'upcoming':
             raise ValidationError("Seuls les tournois à venir peuvent être démarrés")
         
+        # NEW: For league tournaments, auto-generate matches if none exist
+        matches_generated = 0
+        if tournament.tournament_type == 'league':
+            existing_matches = Match.objects.filter(tournament=tournament).count()
+            if existing_matches == 0:
+                from .services import TournamentEngine
+                engine = TournamentEngine(tournament)
+                try:
+                    # Enforce number_of_legs=2 for league if not set
+                    if tournament.number_of_legs < 2:
+                        tournament.number_of_legs = 2
+                        tournament.save()
+                    
+                    matches = engine.generate_group_stage_matches()
+                    matches_generated = len(matches)
+                except Exception as e:
+                    # Log error but don't stop tournament start if it's not critical
+                    print(f"Error auto-generating league matches: {str(e)}")
+        
         tournament.status = 'active'
         tournament.save()
         
         return Response({
-            'message': 'Tournoi démarré',
-            'tournament': TournamentSerializer(tournament).data
+            'message': 'Tournoi démarré' + (f' et {matches_generated} matchs générés' if matches_generated > 0 else ''),
+            'tournament': TournamentSerializer(tournament).data,
+            'matches_generated': matches_generated
         })
 
 

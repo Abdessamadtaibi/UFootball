@@ -9,34 +9,34 @@ https://docs.djangoproject.com/en/5.2/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
-
-from pathlib import Path  
+import os.path
+from pathlib import Path
 from decouple import config
 from datetime import timedelta
+from dotenv import load_dotenv
+
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-
+load_dotenv(os.path.join(BASE_DIR / '.env'))
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = config('SECRET_KEY', default='django-insecure-$ai@8gc81k3t(^dv_rjtkufft2wa)4w@up_cz2rn2#7^%dd1il')
+SECRET_KEY = os.getenv('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = os.getenv('DEBUG', default=False)
 
 ALLOWED_HOSTS = ['www.ufootball.siliad.ma','ufootball.siliad.ma']
-
 CORS_ALLOW_ALL_ORIGINS = True
 CORS_ALLOWED_ORIGINS = [
     'https://www.ufootball.siliad.ma',
-    'https://ufootball.siliad.ma',
-   ]
+   'https://ufootball.siliad.ma',
+ ]
 
 # Application definition
-
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -89,7 +89,6 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'u13_backend.wsgi.application'
 
-
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
@@ -97,11 +96,11 @@ WSGI_APPLICATION = 'u13_backend.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'ufootball',
-        'USER': 'ufootball_admin',
-        'PASSWORD': 'Abdou@24&2003',
-        'HOST': 'localhost',
-        'PORT': '3306',
+        'NAME': os.getenv('DB_NAME'),
+        'USER': os.getenv('DB_USER','root'),
+        'PASSWORD': os.getenv('DB_PASSWORD'),
+        'HOST': os.getenv('DB_HOST','localhost'),
+        'PORT': os.getenv('DB_PORT'),
     }
 }
 
@@ -138,7 +137,7 @@ TIME_ZONE = 'Europe/Paris'
 
 USE_I18N = True
 
-USE_TZ = False  # Set to False to avoid MySQL timezone tables requirement
+USE_TZ = False  # MySQL requires timezone tables installed if True; keep False for local dev
 
 
 # Static files (CSS, JavaScript, Images)
@@ -227,7 +226,7 @@ CORS_ALLOW_CREDENTIALS = True
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
-EMAIL_HOST_USER = 'abdessamadtaibi.xyz@gmail.com'
-EMAIL_HOST_PASSWORD = 'xhfgxbgtwutougeb'
+EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')
+EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
 EMAIL_USE_TLS = True
 DEFAULT_FROM_EMAIL = 'no-reply@u-football.com'
