@@ -203,12 +203,12 @@ class ClubViewSet(viewsets.ModelViewSet):
         if self.action in ['list', 'retrieve']:
             permission_classes = [IsAdminOrStaffOrCoachOrParentUserType]
         else:
-            permission_classes = [permissions.IsAuthenticated, IsStaffUserType]
+            permission_classes = [permissions.IsAuthenticated, IsAdminOrStaffUserType]
         return [permission() for permission in permission_classes]
 
     def perform_create(self, serializer):
-        if self.request.user.user_type != 'staff':
-            raise PermissionDenied({'error': 'Only staff users can create clubs'})
+        if self.request.user.user_type not in ('staff', 'admin'):
+            raise PermissionDenied({'error': 'Only staff or admin users can create clubs'})
         serializer.save(owner=self.request.user)
 
     def perform_update(self, serializer):
@@ -274,14 +274,14 @@ class TeamViewSet(viewsets.ModelViewSet):
         if self.action in ['list', 'retrieve']:
             permission_classes = [IsAdminOrStaffOrCoachOrParentUserType]
         else:
-            permission_classes = [permissions.IsAuthenticated, IsStaffUserType]
+            permission_classes = [permissions.IsAuthenticated, IsAdminOrStaffUserType]
         return [permission() for permission in permission_classes]
 
     def perform_create(self, serializer):
         club_id = self.kwargs.get('club_pk')
         club = get_object_or_404(Club, pk=club_id)
         if club.owner != self.request.user:
-            raise PermissionDenied({'error': 'Only Club staff users can create teams'})
+            raise PermissionDenied({'error': 'Only the club owner can create teams'})
         serializer.save(club=club)
 
     def perform_update(self, serializer):
@@ -349,9 +349,9 @@ class PlayerViewSet(viewsets.ModelViewSet):
 
     def get_permissions(self):
         if self.action in ['list', 'retrieve']:
-            permission_classes = [IsStaffOrCoachOrParentUserType]
+            permission_classes = [IsAdminOrStaffOrCoachOrParentUserType]
         else:
-            permission_classes = [permissions.IsAuthenticated, IsStaffUserType]
+            permission_classes = [permissions.IsAuthenticated, IsAdminOrStaffUserType]
         return [permission() for permission in permission_classes]
 
     def perform_create(self, serializer):

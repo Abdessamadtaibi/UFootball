@@ -45,6 +45,8 @@ class UserCreateSerializer(BaseUserCreateSerializer):
         if user_type in ('staff', 'admin', 'coach'):
             user.is_active = False
             user.is_verified = False
+            if user_type == 'admin':
+                user.is_admin_approved = False
         else:
             # Parent and Viewer accounts
             if djoser_settings.SEND_ACTIVATION_EMAIL:
@@ -54,7 +56,7 @@ class UserCreateSerializer(BaseUserCreateSerializer):
             user.is_verified = False
 
         user.save(update_fields=[
-            'phone_number', 'user_type', 'is_active', 'is_verified'
+            'phone_number', 'user_type', 'is_active', 'is_verified', 'is_admin_approved'
         ])
         
         print(f"DEBUG: User updated with phone_number: {user.phone_number}, user_type: {user.user_type}")
@@ -82,6 +84,8 @@ class UserCreateSerializer(BaseUserCreateSerializer):
         if user_type in ('staff', 'admin', 'coach'):
             user.is_active = False
             user.is_verified = False
+            if user_type == 'admin':
+                user.is_admin_approved = False
         else:
             # Parent and Viewer accounts
             if djoser_settings.SEND_ACTIVATION_EMAIL:
@@ -91,7 +95,7 @@ class UserCreateSerializer(BaseUserCreateSerializer):
             user.is_verified = False
 
         user.save(update_fields=[
-            'phone_number', 'user_type', 'is_active', 'is_verified'
+            'phone_number', 'user_type', 'is_active', 'is_verified', 'is_admin_approved'
         ])
         
         print(f"DEBUG: User created with phone_number: {user.phone_number}, user_type: {user.user_type}")

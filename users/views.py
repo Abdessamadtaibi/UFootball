@@ -11,6 +11,7 @@ from .models import UserProfile
 from django.views import View
 import requests
 from django.shortcuts import render, redirect
+from djoser.views import TokenCreateView
 from .serializers import (
     UserSerializer, UserProfileSerializer, 
     NotificationPreferencesSerializer, ChangePasswordSerializer
@@ -189,6 +190,22 @@ class DeactivateUserView(APIView):
             )
 
 
+class CustomTokenCreateView(TokenCreateView):
+    """
+    Override Djoser's token login to enforce admin approval.
+    Non-admin users pass through unchanged.
+    Admin users with is_admin_approved=False get a 403 response.
+    """
+    def _action(self, serializer):
+        user = serializer.user
+        if user.user_type == 'admin' and not user.is_admin_approved:
+            return Response(
+                {"detail": "Please contact the UFootball Team to activate your account."},
+                status=status.HTTP_403_FORBIDDEN
+            )
+        return super()._action(serializer)
+
+
 def activate_user_template_view(request, uid, token):
     # Dynamically build the activation URL from the current request
     scheme = request.scheme
@@ -198,6 +215,15 @@ def activate_user_template_view(request, uid, token):
     response = requests.post(activation_url, data=data)
 
     if response.status_code == 204:
+        # Check if the activated user is an admin type
+        from djoser.utils import decode_uid
+        try:
+            user_pk = decode_uid(uid)
+            user = User.objects.get(pk=user_pk)
+            if user.user_type == 'admin':
+                return render(request, "activation_admin_pending.html")
+        except (User.DoesNotExist, Exception):
+            pass
         return render(request, "activation_success.html")
     else:
         return render(request, "activation_failed.html")

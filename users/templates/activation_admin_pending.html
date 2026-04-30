@@ -1,0 +1,233 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Approval Pending – UFootball</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #1a1d2e;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .card {
+      background: #2a2d3e;
+      padding: 2.5rem 2rem;
+      border-radius: 20px;
+      max-width: 420px;
+      width: 100%;
+      text-align: center;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+    }
+
+    .logo-container {
+      margin-bottom: 2rem;
+    }
+
+    .logo-icon {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 1rem;
+      overflow: hidden;
+    }
+
+    .logo-icon img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+
+    .logo-text {
+      font-size: 1.8rem;
+      font-weight: bold;
+      color: white;
+      margin-bottom: 0.3rem;
+    }
+
+    .subtitle {
+      font-size: 0.95rem;
+      color: #9ca3af;
+    }
+
+    .status-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.75rem;
+      margin: 2rem 0;
+    }
+
+    .status-row {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .success-icon {
+      width: 40px;
+      height: 40px;
+      background: rgba(16, 185, 129, 0.2);
+      border: 2px solid #10b981;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .success-icon svg {
+      width: 20px;
+      height: 20px;
+      fill: #10b981;
+    }
+
+    .success-badge {
+      background: rgba(16, 185, 129, 0.15);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      color: #10b981;
+      padding: 0.4rem 0.9rem;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      font-weight: 600;
+    }
+
+    .pending-icon {
+      width: 40px;
+      height: 40px;
+      background: rgba(245, 158, 11, 0.2);
+      border: 2px solid #f59e0b;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .pending-icon svg {
+      width: 20px;
+      height: 20px;
+      fill: #f59e0b;
+    }
+
+    .pending-badge {
+      background: rgba(245, 158, 11, 0.15);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+      color: #f59e0b;
+      padding: 0.4rem 0.9rem;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      font-weight: 600;
+    }
+
+    h1 {
+      font-size: 1.5rem;
+      color: white;
+      margin-bottom: 1rem;
+      font-weight: 600;
+    }
+
+    p {
+      font-size: 0.95rem;
+      color: #9ca3af;
+      line-height: 1.6;
+      margin-bottom: 1rem;
+    }
+
+    .highlight {
+      color: #f59e0b;
+      font-weight: 600;
+    }
+
+    .info-box {
+      background: rgba(245, 158, 11, 0.08);
+      border: 1px solid rgba(245, 158, 11, 0.2);
+      border-radius: 12px;
+      padding: 1rem 1.2rem;
+      margin-top: 1.5rem;
+    }
+
+    .info-box p {
+      margin-bottom: 0;
+      font-size: 0.88rem;
+      color: #d1d5db;
+    }
+
+    @media (max-width: 500px) {
+      .card {
+        padding: 2rem 1.5rem;
+      }
+
+      .logo-text {
+        font-size: 1.6rem;
+      }
+
+      h1 {
+        font-size: 1.3rem;
+      }
+
+      .logo-icon {
+        width: 70px;
+        height: 70px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="card">
+    <div class="logo-container">
+      <div class="logo-icon">
+        <img src="{% static 'users/images/logo.png' %}" alt="UFootball Logo">
+      </div>
+      <div class="logo-text">UFootball</div>
+      <div class="subtitle">Ultimate Football Experience</div>
+    </div>
+
+    <div class="status-container">
+      <div class="status-row">
+        <div class="success-icon">
+          <svg viewBox="0 0 24 24">
+            <path d="M9 16.17L4.83 12l-1.42 1.41L9 19L21 7l-1.41-1.41L9 16.17Z" />
+          </svg>
+        </div>
+        <div class="success-badge">✓ Email Verified</div>
+      </div>
+      <div class="status-row">
+        <div class="pending-icon">
+          <svg viewBox="0 0 24 24">
+            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 15v-2h2v2h-2zm0-4V7h2v6h-2z" />
+          </svg>
+        </div>
+        <div class="pending-badge">⏳ Approval Pending</div>
+      </div>
+    </div>
+
+    <h1>Almost There!</h1>
+    <p>Your email has been verified successfully. However, as an <span class="highlight">Admin/Organizer</span> account, your access requires approval from the UFootball team.</p>
+    <p>Please contact the UFootball Team to complete your account activation.</p>
+
+    <div class="info-box">
+      <p>🛡️ Admin accounts have elevated privileges and require manual verification for security purposes.</p>
+    </div>
+  </div>
+</body>
+
+</html>

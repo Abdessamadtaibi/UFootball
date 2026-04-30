@@ -19,7 +19,7 @@ from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
 from django.views.generic import TemplateView
-from users.views import activate_user_template_view, ResetPasswordView
+from users.views import activate_user_template_view, ResetPasswordView, CustomTokenCreateView
 
 urlpatterns = [
     # Landing Page
@@ -28,6 +28,9 @@ urlpatterns = [
     # Admin interface
     path('admin/', admin.site.urls),
     
+    # Custom login endpoint (must come before djoser.urls.authtoken)
+    path('api/auth/token/login/', CustomTokenCreateView.as_view(), name='custom-token-login'),
+
     # Authentication endpoints (Djoser)
     path('api/auth/', include('djoser.urls')),
     path('api/auth/', include('djoser.urls.authtoken')),

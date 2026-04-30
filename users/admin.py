@@ -14,7 +14,7 @@ class UserAdmin(BaseUserAdmin):
     """
     
     # Champs affichés dans la liste
-    list_display = ('id', 'email', 'full_name', 'user_type', 'is_active', 'is_staff', 'date_joined')
+    list_display = ('id', 'email', 'full_name', 'user_type', 'is_active', 'is_admin_approved', 'is_staff', 'date_joined')
     list_filter = ('user_type', 'is_active', 'is_staff', 'is_superuser', 'date_joined')
     search_fields = ('email', 'first_name', 'last_name', 'phone_number')
     ordering = ('email',)
@@ -35,7 +35,7 @@ class UserAdmin(BaseUserAdmin):
             'fields': ('notifications_match_updates', 'notifications_tournament_news', 'notifications_team_news')
         }),
         (_('Permissions'), {
-            'fields': ('is_active', 'is_staff', 'is_superuser', 'groups', 'user_permissions'),
+            'fields': ('is_active', 'is_admin_approved', 'is_staff', 'is_superuser', 'groups', 'user_permissions'),
         }),
         (_('Dates importantes'), {
             'fields': ('last_login', 'date_joined')
@@ -61,13 +61,13 @@ class UserAdmin(BaseUserAdmin):
         return []
 
     # Actions superuser: activer/désactiver Admin/Organisateur
-    actions = ['activate_admins', 'deactivate_admins']
+    actions = ['activate_admins', 'deactivate_admins', 'approve_admins', 'unapprove_admins']
 
     @admin.action(description=_('Activer les Admin/Organisateurs'))
     def activate_admins(self, request, queryset):
         qs = queryset.filter(user_type='admin')
-        updated = qs.update(is_active=True)
-        self.message_user(request, _('%d comptes Admin/Organisateur activés.') % updated)
+        updated = qs.update(is_active=True, is_admin_approved=True)
+        self.message_user(request, _('%d comptes Admin/Organisateur activés et approuvés.') % updated)
 
     @admin.action(description=_('Désactiver les Admin/Organisateurs'))
     def deactivate_admins(self, request, queryset):
@@ -75,11 +75,25 @@ class UserAdmin(BaseUserAdmin):
         updated = qs.update(is_active=False)
         self.message_user(request, _('%d comptes Admin/Organisateur désactivés.') % updated)
 
+    @admin.action(description=_('Approuver les Admin/Organisateurs (UFootball Team)'))
+    def approve_admins(self, request, queryset):
+        qs = queryset.filter(user_type='admin')
+        updated = qs.update(is_admin_approved=True)
+        self.message_user(request, _('%d comptes Admin/Organisateur approuvés par UFootball.') % updated)
+
+    @admin.action(description=_('Retirer l\'approbation des Admin/Organisateurs'))
+    def unapprove_admins(self, request, queryset):
+        qs = queryset.filter(user_type='admin')
+        updated = qs.update(is_admin_approved=False)
+        self.message_user(request, _('%d comptes Admin/Organisateur non approuvés.') % updated)
+
     def get_actions(self, request):
         actions = super().get_actions(request)
         if not request.user.is_superuser:
             actions.pop('activate_admins', None)
             actions.pop('deactivate_admins', None)
+            actions.pop('approve_admins', None)
+            actions.pop('unapprove_admins', None)
         return actions
 
 
